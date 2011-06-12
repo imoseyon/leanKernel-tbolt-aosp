@@ -251,8 +251,11 @@ on boot
     write /proc/1/oom_adj -16
 
     # Tweak background writeout
-#    write /proc/sys/vm/dirty_expire_centisecs 200
-#    write /proc/sys/vm/dirty_background_ratio  5
+    write /proc/sys/vm/dirty_expire_centisecs 200
+    write /proc/sys/vm/dirty_background_ratio  65
+    write /proc/sys/vm/dirty_ratio  90
+    write /proc/sys/vm/vfs_cache_pressure  25
+    write /proc/sys/vm/swappiness  30
 
     # Permissions for System Server and daemons.
     chown radio system /sys/android_power/state
