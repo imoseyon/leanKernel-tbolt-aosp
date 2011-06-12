@@ -40,6 +40,7 @@ usb.patch
 */kernel/config_data.h
 */lib/gen_crc32table
 */scripts/kconfig/conf
+mkboot/boot.img
  
 # Ignore executables
 *.exe
