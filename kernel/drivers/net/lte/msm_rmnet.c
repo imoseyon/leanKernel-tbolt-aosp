@@ -32,7 +32,7 @@
 #include <linux/if_arp.h>
 #include <linux/msm_rmnet.h>
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#if 0
 #include <linux/earlysuspend.h>
 #endif
 
@@ -99,10 +99,10 @@ static int count_this_packet(void *_hdr, int len)
 	return 1;
 }
 
-#ifdef CONFIG_MSM_RMNET_DEBUG
+#if 0 
 static unsigned long timeout_us;
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#if 0
 /*
  * If early suspend is enabled then we specify two timeout values,
  * screen on (default), and screen is off.
@@ -289,7 +289,7 @@ static void smd_net_data_handler(unsigned long arg)
 					}
 					if (RMNET_IS_MODE_IP(opmode) ||
 					    count_this_packet(ptr, skb->len)) {
-#ifdef CONFIG_MSM_RMNET_DEBUG
+#if 0
 						p->wakeups_rcv +=
 							rmnet_cause_wakeup(p);
 #endif
@@ -341,7 +341,7 @@ static int _rmnet_xmit(struct sk_buff *skb, struct net_device *dev)
 	    count_this_packet(skb->data, skb->len)) {
 		p->stats.tx_packets++;
 		p->stats.tx_bytes += skb->len;
-#ifdef CONFIG_MSM_RMNET_DEBUG
+#if 0
 		p->wakeups_xmit += rmnet_cause_wakeup(p);
 #endif
 	}
@@ -733,9 +733,9 @@ static int __init rmnet_init(void)
 
 	pr_info("msm_rmnet: %s\n",  __func__);
 
-#ifdef CONFIG_MSM_RMNET_DEBUG
+#if 0
 	timeout_us = 0;
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#if 0
 	timeout_suspend_us = 0;
 #endif
 #endif
@@ -757,7 +757,7 @@ static int __init rmnet_init(void)
 		tasklet_init(&p->tsklt, _rmnet_resume_flow,
 				(unsigned long)dev);
 		wake_lock_init(&p->wake_lock, WAKE_LOCK_SUSPEND, ch_name[n]);
-#ifdef CONFIG_MSM_RMNET_DEBUG
+#if 0
 		p->timeout_us = timeout_us;
 		p->wakeups_xmit = p->wakeups_rcv = 0;
 #endif
@@ -782,14 +782,14 @@ static int __init rmnet_init(void)
 			return ret;
 		}
 
-#ifdef CONFIG_MSM_RMNET_DEBUG
+#if 0
 		if (device_create_file(d, &dev_attr_timeout))
 			continue;
 		if (device_create_file(d, &dev_attr_wakeups_xmit))
 			continue;
 		if (device_create_file(d, &dev_attr_wakeups_rcv))
 			continue;
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#if 0
 		if (device_create_file(d, &dev_attr_timeout_suspend))
 			continue;
 
