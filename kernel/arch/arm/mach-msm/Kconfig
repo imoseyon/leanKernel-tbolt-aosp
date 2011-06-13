@@ -1693,23 +1693,6 @@ config ACPUCLOCK_DEBUG
 	help
 		Acpuclock freq/vdd adjustment in debugfs.
 
-config ACPUCLOCK_LIMIT_768MHZ
-	bool "Limit the CPU frequency at 768MHz"
-	default n
-	help
-		Support to limit the CPU frequency at 768MHz.
-
-config ACPUCLOCK_OVERCLOCKING
-	bool "Enable support for CPU overclocking"
-	default n
-	depends on CPU_FREQ && !PERFLOCK
-	depends on ARCH_MSM7X30
-
-config JESUS_PHONE
-        bool "Enable support for unstable CPU frequencies"
-        default n
-        depends on ACPUCLOCK_OVERCLOCKING
-
 config HTC_SMEM_MSMC1C2_DEBUG
 	bool "MSMC1/MSMC2 shared memory debug"
 	default n
