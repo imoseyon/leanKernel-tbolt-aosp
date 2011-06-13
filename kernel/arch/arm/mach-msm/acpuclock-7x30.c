@@ -15,7 +15,7 @@
  */
 
 // 1 = lean, 2 = 246Mhz
-#define SLEVEL 2
+#define SLEVEL 1
 
 #include <linux/version.h>
 #include <linux/kernel.h>
@@ -491,6 +491,9 @@ static void __init acpuclk_init(void)
 		pr_err("Error - ACPU clock reports invalid source\n");
 		return;
 	}
+
+	// start at 1Ghz
+	if (s->acpu_clk_khz < 1000000) s++;
 
 	/* Set initial ACPU VDD. */
 	acpuclk_set_acpu_vdd(s);
