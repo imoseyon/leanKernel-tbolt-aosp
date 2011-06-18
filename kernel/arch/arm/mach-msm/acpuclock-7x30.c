@@ -15,7 +15,7 @@
  */
 
 // 1 = lean, 2 = 246Mhz
-#define SLEVEL 2
+#define SLEVEL 1
 
 #include <linux/version.h>
 #include <linux/kernel.h>
