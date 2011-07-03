@@ -146,10 +146,14 @@ static int hs_pmic_mic_status(void)
 	if (hi->pdata.driver_flag & DRIVER_HS_PMIC_DYNAMIC_THRESHOLD)
 		hs_pmic_remote_threshold((unsigned int) adc);
 
-	if (adc >= hi->pdata.adc_mic)
+
+	if (adc >= hi->pdata.adc_mic_bias[0] &&
+	    adc <= hi->pdata.adc_mic_bias[1])
 		ret = HEADSET_MIC;
-	else
+	else if (adc < hi->pdata.adc_mic_bias[0])
 		ret = HEADSET_NO_MIC;
+	else
+		ret = HEADSET_UNKNOWN_MIC;
 
 	return ret;
 }
@@ -280,7 +284,16 @@ static int htc_headset_pmic_probe(struct platform_device *pdev)
 	hi->pdata.adc_mic = pdata->adc_mic;
 
 	if (!hi->pdata.adc_mic)
-		hi->pdata.adc_mic = HS_DEF_MIC_ADC_16_BIT;
+		hi->pdata.adc_mic = HS_DEF_MIC_ADC_16_BIT_MIN;
+
+	if (pdata->adc_mic_bias[0] && pdata->adc_mic_bias[1]) {
+		memcpy(hi->pdata.adc_mic_bias, pdata->adc_mic_bias,
+		       sizeof(hi->pdata.adc_mic_bias));
+		hi->pdata.adc_mic = hi->pdata.adc_mic_bias[0];
+	} else {
+		hi->pdata.adc_mic_bias[0] = hi->pdata.adc_mic;
+		hi->pdata.adc_mic_bias[1] = HS_DEF_MIC_ADC_16_BIT_MAX;
+	}
 
 	if (pdata->adc_remote[5])
 		memcpy(hi->pdata.adc_remote, pdata->adc_remote,

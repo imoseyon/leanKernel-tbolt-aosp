@@ -78,7 +78,10 @@
 #define MASK_USB_HEADSET	(BIT_USB_AUDIO_OUT)
 
 #define HS_DEF_MIC_ADC_10_BIT		200
-#define HS_DEF_MIC_ADC_16_BIT		14894 /* (0.5 / 2.2) * (2 ^ 16) */
+#define HS_DEF_MIC_ADC_16_BIT_MAX	50641
+#define HS_DEF_MIC_ADC_16_BIT_MIN	14894
+
+#define HS_DEF_MIC_DETECT_COUNT		10
 
 #define HS_DELAY_ZERO			0
 #define HS_DELAY_SEC			1000
@@ -97,6 +100,7 @@
 
 #define HS_WAKE_LOCK_TIMEOUT		(2 * HZ)
 #define HS_RPC_TIMEOUT			(5 * HZ)
+#define HS_MIC_DETECT_TIMEOUT		(HZ + HZ / 2)
 
 /* Definitions for Headset RPC Server */
 #define HS_RPC_SERVER_PROG		0x30100004
@@ -123,10 +127,13 @@
 #define HEADSET_NO_MIC		0
 #define HEADSET_MIC		1
 #define HEADSET_METRICO		2
+#define HEADSET_UNKNOWN_MIC	3
 
-#define HTC_35MM_UNPLUG 0
-#define HTC_35MM_NO_MIC 1
-#define HTC_35MM_MIC 2
+#define HTC_35MM_UNPLUG		0
+#define HTC_35MM_NO_MIC		1
+#define HTC_35MM_MIC		2
+#define HTC_35MM_UNKNOWN_MIC	3
+
 
 enum {
 	HEADSET_REG_HPIN_GPIO,
@@ -238,6 +245,7 @@ struct htc_headset_mgr_info {
 	int h2w_35mm_status;
 	int is_ext_insert;
 	int mic_bias_state;
+	int mic_detect_counter;
 	int metrico_status; /* For HW Metrico lab test */
 };
 
