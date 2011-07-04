@@ -28,7 +28,7 @@
 #include <linux/i2c.h>
 #include <linux/i2c-msm.h>
 #include <linux/spi/spi.h>
-#include <mach/qdsp5v2_1x/msm_lpa.h>
+#include <mach/qdsp5v2/msm_lpa.h>
 #include <linux/akm8975.h>
 #include <linux/bma150.h>
 #include <linux/capella_cm3602.h>
@@ -1622,7 +1622,7 @@ static void __init msm7x30_init_marimba(void)
 		return;
 	}
 }
-#ifdef CONFIG_MSM7KV2_1X_AUDIO
+#ifdef CONFIG_MSM7KV2_AUDIO
 static struct resource msm_aictl_resources[] = {
 	{
 		.name = "aictl",
@@ -1904,7 +1904,7 @@ static void __init aux_pcm_gpio_init(void)
 	config_gpio_table(aux_pcm_gpio_off,
 		ARRAY_SIZE(aux_pcm_gpio_off));
 }
-#endif /* CONFIG_MSM7KV2_1X_AUDIO */
+#endif /* CONFIG_MSM7KV2_AUDIO */
 
 static struct msm_sdio_al_platform_data mdm2ap_status_gpio_data = {
 	.mdm2ap_status_gpio_id = MECHA_GPIO_MDM2AP_STATUS,	 /* MDM2AP_STATUS  */
@@ -2386,7 +2386,7 @@ static struct platform_device *devices[] __initdata = {
 	&qup_device_i2c,
 	&htc_headset_mgr,
 	&htc_battery_pdev,
-#ifdef CONFIG_MSM7KV2_1X_AUDIO
+#ifdef CONFIG_MSM7KV2_AUDIO
 	&msm_aictl_device,
 	&msm_mi2s_device,
 	&msm_lpa_device,
@@ -2397,7 +2397,7 @@ static struct platform_device *devices[] __initdata = {
 #ifdef CONFIG_MSM_GEMINI
 	&msm_gemini_device,
 #endif
-#ifdef CONFIG_MSM7KV2_1X_AUDIO
+#ifdef CONFIG_MSM7KV2_AUDIO
 	&msm_aux_pcm_device,
 #endif
 #ifdef CONFIG_S5K3H1GX
@@ -2724,7 +2724,7 @@ static void __init mecha_init(void)
 	msm_device_i2c_init();
 	qup_device_i2c_init();
 	msm7x30_init_marimba();
-#ifdef CONFIG_MSM7KV2_1X_AUDIO
+#ifdef CONFIG_MSM7KV2_AUDIO
 	msm_snddev_init();
 	aux_pcm_gpio_init();
 #endif
