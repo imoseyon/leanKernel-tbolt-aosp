@@ -159,7 +159,6 @@ static const u32 oid_supported_list [] =
 #endif	/* RNDIS_PM */
 };
 
-
 /* NDIS Functions */
 static int
 gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
@@ -171,7 +170,7 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
 	int			i, count;
 	rndis_query_cmplt_type	*resp;
 	struct net_device	*net;
-	const struct net_device_stats	*stats;
+	const struct net_device_stats *stats;
 
 	if (!r) return -ENOMEM;
 	resp = (rndis_query_cmplt_type *) r->buf;
@@ -1151,7 +1150,7 @@ static struct proc_dir_entry *rndis_connect_state [RNDIS_MAX_CONFIGS];
 #endif	/* CONFIG_USB_GADGET_DEBUG_FILES */
 
 
-int __init rndis_init (void)
+int rndis_init(void)
 {
 	u8 i;
 
