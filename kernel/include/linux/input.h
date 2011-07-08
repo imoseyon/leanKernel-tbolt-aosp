@@ -696,6 +696,7 @@ struct input_absinfo {
 #define ABS_MT_POSITION		0x2a	/* Group a set of X and Y */
 #define ABS_MT_AMPLITUDE	0x2b	/* Group a set of Z and W */
 
+#define ABS_MT_SLOT            0x2f    /* MT slot being modified */
 #define ABS_MT_TOUCH_MAJOR	0x30	/* Major axis of touching ellipse */
 #define ABS_MT_TOUCH_MINOR	0x31	/* Minor axis (omit if circular) */
 #define ABS_MT_WIDTH_MAJOR	0x32	/* Major axis of approaching ellipse */
@@ -707,6 +708,12 @@ struct input_absinfo {
 #define ABS_MT_BLOB_ID		0x38	/* Group a set of packets as a blob */
 #define ABS_MT_TRACKING_ID	0x39	/* Unique ID of initiated contact */
 #define ABS_MT_PRESSURE		0x3a	/* Pressure on contact area */
+
+#ifdef __KERNEL__
+/* Implementation details, userspace should not care about these */
+#define ABS_MT_FIRST            ABS_MT_TOUCH_MAJOR
+#define ABS_MT_LAST             ABS_MT_PRESSURE
+#endif
 
 #define ABS_MAX			0x3f
 #define ABS_CNT			(ABS_MAX+1)
@@ -769,6 +776,7 @@ struct input_absinfo {
 #define REP_DELAY		0x00
 #define REP_PERIOD		0x01
 #define REP_MAX			0x01
+#define REP_CNT                 (REP_MAX+1)
 
 /*
  * Sounds
@@ -1050,6 +1058,14 @@ struct ff_effect {
 #include <linux/mod_devicetable.h>
 
 /**
+ * struct input_mt_slot - represents the state of an input MT slot
+ * @abs: holds current values of ABS_MT axes for this slot
+ */
+struct input_mt_slot {
+        int abs[ABS_MT_LAST - ABS_MT_FIRST + 1];
+};
+
+/**
  * struct input_dev - represents an input device
  * @name: name of the device
  * @phys: physical path to the device in the system hierarchy
@@ -1142,6 +1158,8 @@ struct input_dev {
 	unsigned long ffbit[BITS_TO_LONGS(FF_CNT)];
 	unsigned long swbit[BITS_TO_LONGS(SW_CNT)];
 
+        unsigned int hint_events_per_packet;
+
 	unsigned int keycodemax;
 	unsigned int keycodesize;
 	void *keycode;
@@ -1155,10 +1173,17 @@ struct input_dev {
 	unsigned int repeat_key;
 	struct timer_list timer;
 
-	int sync;
+        int rep[REP_CNT];
+
+        struct input_mt_slot *mt;
+        int mtsize;
+        int slot;
+
+        struct input_absinfo *absinfo;
+
+	bool sync;
 
 	int abs[ABS_CNT];
-	int rep[REP_MAX + 1];
 
 	unsigned long key[BITS_TO_LONGS(KEY_CNT)];
 	unsigned long led[BITS_TO_LONGS(LED_CNT)];
@@ -1408,17 +1433,53 @@ static inline void input_mt_sync(struct input_dev *dev)
 	input_event(dev, EV_SYN, SYN_MT_REPORT, 0);
 }
 
+static inline void input_mt_slot(struct input_dev *dev, int slot)
+{
+        input_event(dev, EV_ABS, ABS_MT_SLOT, slot);
+}
+
+/**
+ * input_set_events_per_packet - tell handlers about the driver event rate
+ * @dev: the input device used by the driver
+ * @n_events: the average number of events between calls to input_sync()
+ *
+ * If the event rate sent from a device is unusually large, use this
+ * function to set the expected event rate. This will allow handlers
+ * to set up an appropriate buffer size for the event stream, in order
+ * to minimize information loss.
+ */
+static inline void input_set_events_per_packet(struct input_dev *dev, int n_events)
+{
+        dev->hint_events_per_packet = n_events;
+}
+
 void input_set_capability(struct input_dev *dev, unsigned int type, unsigned int code);
 
-static inline void input_set_abs_params(struct input_dev *dev, int axis, int min, int max, int fuzz, int flat)
-{
-	dev->absmin[axis] = min;
-	dev->absmax[axis] = max;
-	dev->absfuzz[axis] = fuzz;
-	dev->absflat[axis] = flat;
+void input_alloc_absinfo(struct input_dev *dev);
+void input_set_abs_params(struct input_dev *dev, unsigned int axis,
+                          int min, int max, int fuzz, int flat);
 
-	dev->absbit[BIT_WORD(axis)] |= BIT_MASK(axis);
+#define INPUT_GENERATE_ABS_ACCESSORS(_suffix, _item)                    \
+static inline int input_abs_get_##_suffix(struct input_dev *dev,        \
+                                          unsigned int axis)            \
+{                                                                       \
+        return dev->absinfo ? dev->absinfo[axis]._item : 0;             \
+}                                                                       \
+                                                                        \
+static inline void input_abs_set_##_suffix(struct input_dev *dev,       \
+                                           unsigned int axis, int val)  \
+{                                                                       \
+        input_alloc_absinfo(dev);                                       \
+        if (dev->absinfo)                                               \
+                dev->absinfo[axis]._item = val;                         \
 }
+
+INPUT_GENERATE_ABS_ACCESSORS(val, value)
+INPUT_GENERATE_ABS_ACCESSORS(min, minimum)
+INPUT_GENERATE_ABS_ACCESSORS(max, maximum)
+INPUT_GENERATE_ABS_ACCESSORS(fuzz, fuzz)
+INPUT_GENERATE_ABS_ACCESSORS(flat, flat)
+INPUT_GENERATE_ABS_ACCESSORS(res, resolution)
 
 int input_get_keycode(struct input_dev *dev,
 		      unsigned int scancode, unsigned int *keycode);
@@ -1486,6 +1547,8 @@ int input_ff_erase(struct input_dev *dev, int effect_id, struct file *file);
 
 int input_ff_create_memless(struct input_dev *dev, void *data,
 		int (*play_effect)(struct input_dev *, void *, struct ff_effect *));
+int input_mt_create_slots(struct input_dev *dev, unsigned int num_slots);
+void input_mt_destroy_slots(struct input_dev *dev);
 
 #endif
 #endif
