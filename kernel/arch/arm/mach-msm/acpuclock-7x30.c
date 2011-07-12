@@ -15,7 +15,7 @@
  */
 
 // 1 = lean, 2 = 246Mhz
-#define SLEVEL 2
+#define SLEVEL 1
 
 #include <linux/version.h>
 #include <linux/kernel.h>
@@ -230,6 +230,8 @@ static void acpuclk_set_src(const struct clkctl_acpu_speed *s)
 	/* Program PLL2 L val for overclocked speeds. */
 	if(s->src == PLL_2) {
 		lval = s->acpu_clk_khz/19200;	
+                // cheat a bit here clock down one when high freq
+                if (s->acpu_clk_khz > 1500000) lval--;
 		writel(lval, PLL2_L_VAL_ADDR);
 	}
 
