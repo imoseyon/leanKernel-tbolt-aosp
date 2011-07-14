@@ -104,9 +104,9 @@ case $option in
 	echo 'echo "1024000 1100" > $sysfile' >> $ifile
 	echo 'echo "1222400 1125" > $sysfile' >> $ifile
 	echo 'echo "1408000 1175" > $sysfile' >> $ifile
-	echo 'echo "1593600 1375" > $sysfile' >> $ifile
-	echo 'echo "1766400 1400" > $sysfile' >> $ifile
-	echo 'echo "1920000 1450" > $sysfile' >> $ifile
+	echo 'echo "1593600 1250" > $sysfile' >> $ifile
+	echo 'echo "1766400 1300" > $sysfile' >> $ifile
+	echo 'echo "1920000 1400" > $sysfile' >> $ifile
 	echo 'echo 245760 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq' >> $ifile
 	echo 'echo 1920000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq' >> $ifile
 	sh $ifile
