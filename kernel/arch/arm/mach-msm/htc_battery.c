@@ -46,6 +46,7 @@
 #endif
 
 static struct wake_lock vbus_wake_lock;
+unsigned int current_mode;
 
 enum {
 	HTC_BATT_DEBUG_M2A_RPC = 1U << 0,
@@ -462,7 +463,7 @@ static int htc_cable_status_update(int status)
 	if (!htc_battery_initial)
 		return 0;
 
-	if (status < CHARGER_BATTERY || status > CHARGER_SUPER_AC) {
+	if (status < CHARGER_BATTERY || status > CHARGER_WIRELESS) {
 		BATT_ERR("%s: Not supported cable status received!", __func__);
 		return -EINVAL;
 	}
@@ -492,8 +493,20 @@ static int htc_cable_status_update(int status)
 	if ((htc_batt_info.guage_driver == GUAGE_MODEM) && (status == CHARGER_AC)) {
 		htc_set_smem_cable_type(CHARGER_AC);
 		power_supply_changed(&htc_power_supplies[CHARGER_AC]);
-	} else
-		msm_hsusb_set_vbus_state(!!htc_batt_info.rep.charging_source);
+	} else {
+		if (status == CHARGER_WIRELESS) {
+                        BATT_LOG("batt: Wireless charger detected. "
+                                "We don't need to inform USB driver.");
+//                        blocking_notifier_call_chain(&wireless_charger_notifier_list, status, NULL);
+                        power_supply_changed(&htc_power_supplies[CHARGER_USB]);
+                        update_wake_lock(htc_batt_info.rep.charging_source);
+                } else {
+                        /* We need to notify other driver as wireless charger out. */
+ //                       if (last_source == CHARGER_WIRELESS)
+  //                              blocking_notifier_call_chain(&wireless_charger_notifier_list, status, NULL);
+                        msm_hsusb_set_vbus_state(!!htc_batt_info.rep.charging_source);
+                }
+        }
 
 	/* TODO: use power_supply_change to notify battery drivers. */
 	if (htc_batt_info.guage_driver == GUAGE_DS2784 ||
@@ -708,6 +721,7 @@ static int htc_get_batt_info_smem(struct battery_info_reply *buffer)
 	buffer->over_vchg = smem_batt_info->over_vchg;
 	mutex_unlock(&htc_batt_info.lock);
 
+/*
 	if (htc_batt_debug_mask & HTC_BATT_DEBUG_SMEM)
 		BATT_LOG("SMEM_BATT: get_batt_info: batt_id=%d, batt_vol=%d, batt_temp=%d, "
 			"batt_current=%d, eval_current=%d, level=%d, charging_source=%d, "
@@ -717,6 +731,7 @@ static int htc_get_batt_info_smem(struct battery_info_reply *buffer)
 			buffer->charging_enabled, buffer->full_bat, buffer->over_vchg,
 			smem_batt_info->hv_enabled);
 
+*/
 	return 0;
 }
 
@@ -891,6 +906,10 @@ static int htc_power_get_property(struct power_supply *psy,
 			val->intval = (charger ==  CHARGER_USB ? 1 : 0);
 			if (htc_batt_debug_mask & HTC_BATT_DEBUG_USER_QUERY)
 				BATT_LOG("%s: %s: online=%d", __func__, psy->name, val->intval);
+               } else if (psy->type == POWER_SUPPLY_TYPE_WIRELESS) {
+                        val->intval = (charger ==  CHARGER_WIRELESS ? 1 : 0);
+                        if (htc_batt_debug_mask & HTC_BATT_DEBUG_USER_QUERY)
+                                BATT_LOG("%s: %s: online=%d", __func__, psy->name, val->intval);
 		} else
 			val->intval = 0;
 		break;
@@ -1068,11 +1087,14 @@ static int htc_rpc_charger_switch(unsigned enable)
 	} req;
 
 	BATT_LOG("%s: switch charger to mode: %u", __func__, enable);
-	if (enable == ENABLE_LIMIT_CHARGER)
-		ret = tps_set_charger_ctrl(ENABLE_LIMITED_CHG);
-	else if (enable == DISABLE_LIMIT_CHARGER)
+	if (enable == ENABLE_LIMIT_CHARGER) {
+		ret = tps_set_charger_ctrl(ENABLE_SLOW_CHG);
+		current_mode = ENABLE_SLOW_CHG;
+		pr_info("[imosey] limited charger mode asked but I refused!\n");
+	} else if (enable == DISABLE_LIMIT_CHARGER) {
 		ret = tps_set_charger_ctrl(CLEAR_LIMITED_CHG);
-	else {
+		pr_info("[imosey] sense asked for clear limited charge!\n");
+	} else {
 		req.data = cpu_to_be32(enable);
 		ret = msm_rpc_call(endpoint, HTC_PROCEDURE_CHARGER_SWITCH,
 				&req, sizeof(req), 5 * HZ);
@@ -1313,6 +1335,42 @@ static ssize_t htc_battery_show_property(struct device *dev,
 	if (!update_batt_info())
 		htc_batt_info.update_time = jiffies;
 
+	pr_info("[imosey] batt mode: %d, level: %d, source: %d, current: %d, temp: %d\n", 
+		current_mode, htc_batt_info.rep.level, htc_batt_info.rep.charging_source, 
+		htc_batt_info.rep.batt_current, htc_batt_info.rep.batt_temp);
+
+	// if already in fast charge mode, some conditions should make it go slow
+	if (current_mode == ENABLE_FAST_CHG) {
+	
+	  if (htc_batt_info.rep.batt_temp > 500 || htc_batt_info.rep.level > 94
+		|| (htc_batt_info.rep.charging_source == CHARGER_USB &&
+                htc_batt_info.rep.batt_current > 99)) {
+		  tps_set_charger_ctrl(ENABLE_SLOW_CHG);
+		  current_mode = ENABLE_SLOW_CHG;
+		  pr_info("[imosey] batt: switched to slow mode\n");
+	  }
+
+	// if already in slow mode, some conditions should make it go fast
+	} else if (current_mode == ENABLE_SLOW_CHG && htc_batt_info.rep.level < 95) {
+	  if (htc_batt_info.rep.batt_temp < 400)
+	    if (htc_batt_info.rep.charging_source == CHARGER_AC || 
+	       (htc_batt_info.rep.batt_current < 100
+			&& htc_batt_info.rep.batt_current != 0)) {
+		tps_set_charger_ctrl(ENABLE_FAST_CHG);
+		current_mode = ENABLE_FAST_CHG;
+		pr_info("[imosey] batt: switched to fast mode\n");
+	  }
+
+	// should not be here?
+	} else {
+	  // a hack for wireless chargers
+	  if (htc_batt_info.rep.charging_source == CHARGER_WIRELESS) {
+		tps_set_charger_ctrl(ENABLE_SLOW_CHG);
+                current_mode = ENABLE_SLOW_CHG;
+                pr_info("[imosey] batt: enabled slow mode for wireless\n"); 
+	  }
+	}
+
 dont_need_update:
 	mutex_unlock(&htc_batt_info.rpc_lock);
 
@@ -1552,7 +1610,7 @@ static int handle_battery_call(struct msm_rpc_server *server,
 		args->enable = be32_to_cpu(args->enable);
 
 		// force slow charge when level > 94
-                if (htc_batt_info.rep.level > 94) args->enable = 1;
+                if (htc_batt_info.rep.level > 94) args->enable = ENABLE_SLOW_CHG;
 
 		if (htc_batt_debug_mask & HTC_BATT_DEBUG_M2A_RPC)
 			BATT_LOG("M2A_RPC: set_charging: %d", args->enable);
@@ -1564,6 +1622,7 @@ static int handle_battery_call(struct msm_rpc_server *server,
 		else {
 			htc_battery_set_charging(args->enable);
 		}
+		current_mode = args->enable;
 		return 0;
 	}
 	case RPC_BATT_MTOA_CABLE_STATUS_UPDATE_PROC: {
@@ -1585,10 +1644,6 @@ static int handle_battery_call(struct msm_rpc_server *server,
 		if (htc_batt_debug_mask & HTC_BATT_DEBUG_M2A_RPC)
 			BATT_LOG("M2A_RPC: level_update: %d", args->level);
 		htc_battery_status_update(args->level);
-		// at 95% switch to slow charge
-		if (htc_batt_info.rep.charging_source != 1 && args->level > 94
-			&& args->level < 98)
-			tps_set_charger_ctrl(1);
 		return 0;
 	}
 	default:
