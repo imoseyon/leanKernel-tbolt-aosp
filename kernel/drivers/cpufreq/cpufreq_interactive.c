@@ -367,7 +367,7 @@ static int __init cpufreq_interactive_init(void)
 	}
 
 	/* Scale up is high priority */
-	up_wq = alloc_workqueue("kinteractive_up", WQ_HIGHPRI | WQ_CPU_INTENSIVE, 1);
+	up_wq = create_rt_workqueue("kinteractive_up");
 	down_wq = create_workqueue("knteractive_down");
 
 	INIT_WORK(&freq_scale_work, cpufreq_interactive_freq_change_time_work);
