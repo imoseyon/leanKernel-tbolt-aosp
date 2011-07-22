@@ -1,3 +1,6 @@
 *.o
 *.cmd
 *.ko
+mkboot/boot.img
+mkboot/newramdisk.cpio.gz
+mkboot/zImage
