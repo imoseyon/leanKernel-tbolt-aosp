@@ -41,7 +41,10 @@
 #define MSM_NAND_CFG0_RAW 0xA80420C0
 #define MSM_NAND_CFG1_RAW 0x5045D
 
+#define MSM_NAND_PHYS		0xA0A00000
 #define VERBOSE 0
+
+unsigned int crci_mask;
 
 struct msm_nand_chip {
 	struct device *dev;
@@ -198,7 +201,7 @@ uint32_t flash_read_id(struct msm_nand_chip *chip)
 		(msm_virt_to_dma(chip, dma_buffer->cmd) >> 3) | CMD_PTR_LP;
 
 	msm_dmov_exec_cmd(
-		chip->dma_channel, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 
 	rv = dma_buffer->data[4];
@@ -237,7 +240,7 @@ int flash_read_config(struct msm_nand_chip *chip)
 		(msm_virt_to_dma(chip, dma_buffer->cmd) >> 3) | CMD_PTR_LP;
 
 	msm_dmov_exec_cmd(
-		chip->dma_channel, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 
 	chip->CFG0 = dma_buffer->cfg0;
@@ -278,7 +281,7 @@ unsigned flash_rd_reg(struct msm_nand_chip *chip, unsigned addr)
 	dma_buffer->data = 0xeeeeeeee;
 
 	msm_dmov_exec_cmd(
-		chip->dma_channel, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 	rv = dma_buffer->data;
 
@@ -309,7 +312,7 @@ void flash_wr_reg(struct msm_nand_chip *chip, unsigned addr, unsigned val)
 	dma_buffer->data = val;
 
 	msm_dmov_exec_cmd(
-		chip->dma_channel, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 
 	msm_nand_release_dma_buffer(chip, dma_buffer, sizeof(*dma_buffer));
@@ -668,7 +671,7 @@ static int msm_nand_read_oob(struct mtd_info *mtd, loff_t from,
 			| CMD_PTR_LP;
 
 		msm_dmov_exec_cmd(
-			chip->dma_channel, DMOV_CMD_PTR_LIST | DMOV_CMD_ADDR(
+			chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST | DMOV_CMD_ADDR(
 				msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 
 		/* if any of the writes failed (0x10), or there
@@ -1042,7 +1045,7 @@ msm_nand_write_oob(struct mtd_info *mtd, loff_t to, struct mtd_oob_ops *ops)
 			CMD_PTR_LP;
 
 		msm_dmov_exec_cmd(chip->dma_channel,
-			DMOV_CMD_PTR_LIST | DMOV_CMD_ADDR(
+			crci_mask, DMOV_CMD_PTR_LIST | DMOV_CMD_ADDR(
 				msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 
 		/* if any of the writes failed (0x10), or there was a
@@ -1190,7 +1193,7 @@ msm_nand_erase(struct mtd_info *mtd, struct erase_info *instr)
 		(msm_virt_to_dma(chip, dma_buffer->cmd) >> 3) | CMD_PTR_LP;
 
 	msm_dmov_exec_cmd(
-		chip->dma_channel, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 
 	/* we fail if there was an operation error, a mpu error, or the
@@ -1323,7 +1326,7 @@ msm_nand_block_isbad(struct mtd_info *mtd, loff_t ofs)
 	dma_buffer->cmdptr = (msm_virt_to_dma(chip,
 				dma_buffer->cmd) >> 3) | CMD_PTR_LP;
 
-	msm_dmov_exec_cmd(chip->dma_channel, DMOV_CMD_PTR_LIST |
+	msm_dmov_exec_cmd(chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 
 	ret = 0;
