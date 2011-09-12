@@ -4,10 +4,10 @@ on early-fs
     mkdir /data 0771 system system
     mkdir /cache 0770 system cache
     mkdir /devlog 0700 root root
-    mount ext4 /dev/block/mmcblk0p25 /system wait ro barrier=1
-    mount ext4 /dev/block/mmcblk0p26 /data wait noatime nosuid nodev barrier=1 noauto_da_alloc
-    mount ext4 /dev/block/mmcblk0p27 /cache wait noatime nosuid nodev barrier=1
-    mount ext4 /dev/block/mmcblk0p29 /devlog wait noatime nosuid nodev barrier=1
+    mount ext4 /dev/block/mmcblk0p25 /system noatime ro noauto_da_alloc,barrier=0,data=writeback
+    mount ext4 /dev/block/mmcblk0p26 /data noatime data=ordered,barrier=1,noauto_da_alloc
+    mount ext4 /dev/block/mmcblk0p27 /cache noatime noauto_da_alloc,barrier=0,data=writeback 
+    mount ext4 /dev/block/mmcblk0p29 /devlog noatime data=ordered,noauto_da_alloc,barrier=0
 
 #on early-init
     device mtd@misc 0460 radio diag
