@@ -20,6 +20,7 @@ if [ $1 -eq 3 ]; then
 fi
 cp arch/arm/boot/zImage ../mkboot/
 cp drivers/net/wireless/bcm4329/bcm4329.ko ../mkboot/
+cp drivers/net/tun.ko /tmp
 cd ../mkboot
 echo "making boot image"
 ./img.sh
