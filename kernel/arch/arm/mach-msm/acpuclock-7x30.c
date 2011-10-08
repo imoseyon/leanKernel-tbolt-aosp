@@ -14,9 +14,6 @@
  *
  */
 
-// 1 = lean, 2 = 246Mhz
-#define SLEVEL 2
-
 #include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -85,7 +82,7 @@ struct clkctl_acpu_speed {
 static struct clock_state drv_state = { 0 };
 
 static struct cpufreq_frequency_table freq_table[] = {
-#if SLEVEL == 1
+#ifdef CONFIG_UNLOCK_184MHZ
         { 0, 184320 },
         { 1, 245760 },
         { 2, 368640 },
@@ -123,7 +120,7 @@ static struct clkctl_acpu_speed acpu_freq_tbl[] = {
 	{ MAX_AXI_KHZ, SRC_AXI, 1, 0, 61440, 1000, VDD_RAW(1000) },
 */
 
-#if SLEVEL == 1
+#ifdef CONFIG_UNLOCK_184MHZ
 	{ 184320, PLL_3,    5, 4,  61440,  900, VDD_RAW(900) },
 #endif
 	{ 245760, PLL_3,    5, 2,  61440,  975, VDD_RAW(975) },

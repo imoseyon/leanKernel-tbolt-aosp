@@ -1822,3 +1822,8 @@ config MSM7X30_DDR2
 	bool "Request max ebi1 at max cpu frequency"
 	depends on ARCH_MSM7X30
 	default n
+
+config UNLOCK_184MHZ
+	bool "Unlock 184Mhz"
+	depends on ARCH_MSM7X30
+	default n
