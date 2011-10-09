@@ -18,7 +18,7 @@ find . -name "*.ko" | xargs $TOOLCHAIN/${TOOLCHAIN_PREFIX}strip --strip-unneeded
 
 cp drivers/net/wireless/bcm4329/bcm4329.ko ../zip/system/lib/modules
 cp drivers/net/tun.ko ../zip/system/lib/modules
-cp drivers/staging/ramzswap/ramzswap.ko ../zip/system/lib/modules
+cp drivers/staging/zram/zram.ko ../zip/system/lib/modules
 cp lib/lzo/lzo_decompress.ko ../zip/system/lib/modules
 cp lib/lzo/lzo_compress.ko ../zip/system/lib/modules
 cp fs/cifs/cifs.ko ../zip/system/lib/modules

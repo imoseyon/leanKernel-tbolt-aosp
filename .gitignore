@@ -5,3 +5,4 @@ mkboot/boot.img
 mkboot/newramdisk.cpio.gz
 mkboot/zImage
 mkboot.sense
+zip
