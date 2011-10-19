@@ -166,6 +166,11 @@ static DECLARE_WORK(work_create_rpcrouter_pdev, do_create_rpcrouter_pdev);
 #define RR_STATE_BODY    2
 #define RR_STATE_ERROR   3
 
+#define RMT_STORAGE_APIPROG_BE32		0xa7000030
+#define RMT_STORAGE_SRV_APIPROG_BE32	0x9c000030
+#define BATT_A2M_PROG					0x30100001
+#define BATT_M2A_PROG					0x30100000
+
 /* After restart notification, local ep keep
  * state for server restart and for ep notify.
  * Server restart cleared by R-R new svr msg.
@@ -213,8 +218,7 @@ struct rpcrouter_xprt_info {
 	uint32_t need_len;
 	struct work_struct read_data;
 	struct workqueue_struct *workqueue;
-
-	uint32_t r2r_buf[RPCROUTER_MSGSIZE_MAX];
+	unsigned char r2r_buf[RPCROUTER_MSGSIZE_MAX];
 };
 
 static LIST_HEAD(xprt_info_list);
@@ -639,7 +643,6 @@ static struct rr_remote_endpoint *rpcrouter_lookup_remote_endpoint(uint32_t pid,
 	list_for_each_entry(ept, &remote_endpoints, list) {
 		if ((ept->pid == pid) && (ept->cid == cid)) {
 			spin_unlock_irqrestore(&remote_endpoints_lock, flags);
-			D("%s: Found r_ept %p for %d:%08x\n", __func__, ept, pid, cid);
 			return ept;
 		}
 	}
@@ -703,14 +706,12 @@ static int process_control_msg(struct rpcrouter_xprt_info *xprt_info,
 	case RPCROUTER_CTRL_CMD_HELLO:
 		RR("o HELLO PID %d\n", xprt_info->remote_pid);
 
-		/* FIX ME */
-		/* Andy added this for workaround duplicated RPCROUTER_CTRL_CMD_HELLO issue on Mecha */
-#ifdef CONFIG_MACH_MECHA
+		/* HTC add this to avoid the duplicate RPCROUTER_CTRL_CMD_HELLO issue */
 		if (xprt_info->initialized) {
-			pr_err("\n\nWarning! Receive RPCROUTER_CTRL_CMD_HELLO twice!\n\n");
+			pr_err("\n\n\nWarning! Receive RPCROUTER_CTRL_CMD_HELLO twice! (Remote_PID=0x%x)\n\n\n", xprt_info->remote_pid);
 			break;
 		}
-#endif
+		/*--------------------------------------------------------------*/
 
 		memset(&ctl, 0, sizeof(ctl));
 		ctl.cmd = RPCROUTER_CTRL_CMD_HELLO;
@@ -1011,7 +1012,8 @@ static void do_read_data(struct work_struct *work)
 
 		if (rr_read(xprt_info, xprt_info->r2r_buf, hdr.size))
 			goto fail_io;
-		process_control_msg(xprt_info, (void *) xprt_info->r2r_buf, hdr.size);
+		process_control_msg(xprt_info,
+				    (void *) xprt_info->r2r_buf, hdr.size);
 		goto done;
 	}
 
@@ -1475,6 +1477,16 @@ int msm_rpc_write(struct msm_rpc_endpoint *ept, void *buffer, int count)
 	uint32_t mid;
 	unsigned long flags;
 
+	if (((rq->prog&0xFFFFFFF0) == RMT_STORAGE_APIPROG_BE32) ||
+		((rq->prog&0xFFFFFFF0) == RMT_STORAGE_SRV_APIPROG_BE32) ||
+		(be32_to_cpu(rq->prog) == BATT_A2M_PROG) ||
+		(be32_to_cpu(rq->prog) == BATT_M2A_PROG)) {
+		printk(KERN_DEBUG
+			"%s: prog = 0x%X, procedure = %d, type = %d, xid = %d\n",
+			__func__, be32_to_cpu(rq->prog), be32_to_cpu(rq->procedure)
+			, be32_to_cpu(rq->type), be32_to_cpu(rq->xid));
+	}
+
 	/* snoop the RPC packet and enforce permissions */
 
 	/* has to have at least the xid and type fields */
@@ -1805,6 +1817,17 @@ int __msm_rpc_read(struct msm_rpc_endpoint *ept,
 
 	*frag_ret = pkt->first;
 	rq = (void*) pkt->first->data;
+
+	if (((rq->prog&0xFFFFFFF0) == RMT_STORAGE_APIPROG_BE32) ||
+		((rq->prog&0xFFFFFFF0) == RMT_STORAGE_SRV_APIPROG_BE32) ||
+		(be32_to_cpu(rq->prog) == BATT_A2M_PROG) ||
+		(be32_to_cpu(rq->prog) == BATT_M2A_PROG)) {
+		printk(KERN_DEBUG
+			"%s: prog = 0x%X, procedure = %d, type = %d, xid = %d\n",
+			__func__, be32_to_cpu(rq->prog), be32_to_cpu(rq->procedure)
+			, be32_to_cpu(rq->type), be32_to_cpu(rq->xid));
+	}
+
 	if ((rc >= (sizeof(uint32_t) * 3)) && (rq->type == 0)) {
 		/* RPC CALL */
 		reply = get_avail_reply(ept);
@@ -2370,6 +2393,7 @@ static int __init rpcrouter_init(void)
 	/* Initialize what we need to start processing */
 	INIT_LIST_HEAD(&local_endpoints);
 	INIT_LIST_HEAD(&remote_endpoints);
+	INIT_LIST_HEAD(&xprt_info_list);
 
 	init_waitqueue_head(&newserver_wait);
 
