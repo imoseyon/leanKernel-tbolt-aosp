@@ -24,9 +24,8 @@ if [ $minfreq -lt 200000 ]; then
 	echo
 fi
 echo "8) Choose InteractiveX governor"
-echo "9) Choose Smartass governor"
+echo "9) Choose SmartassV2 governor"
 echo "10) Choose OndemandX governor"
-echo "15) Choose SmartassV2 governor (imoseyon fails at numbering)"
 echo
 echo "11) View current settings"
 echo "12) View time-in-state (shows how much time is spent at each slot)"
@@ -142,16 +141,12 @@ case $option in
 	echo 'echo interactiveX > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor' >> $ifile
 ;;
 9)
-	echo smartass > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-	echo 'echo smartass > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor' >> $ifile
+	echo smartassV2 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+	echo 'echo smartassV2 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor' >> $ifile
 ;;
 10)
 	echo ondemandX > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 	echo 'echo ondemandX > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor' >> $ifile
-;;
-15)
-	echo smartassV2 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-	echo 'echo smartassV2 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor' >> $ifile
 ;;
 11)
   echo
