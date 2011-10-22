@@ -230,14 +230,14 @@ static void smd_tty_unthrottle(struct tty_struct *tty)
 	return;
 }
 
-static int smd_tty_tiocmget(struct tty_struct *tty, struct file *file)
+static int smd_tty_tiocmget(struct tty_struct *tty)
 {
 	struct smd_tty_info *info = tty->driver_data;
 
 	return smd_tiocmget(info->ch);
 }
 
-static int smd_tty_tiocmset(struct tty_struct *tty, struct file *file,
+static int smd_tty_tiocmset(struct tty_struct *tty,
 				unsigned int set, unsigned int clear)
 {
 	struct smd_tty_info *info = tty->driver_data;

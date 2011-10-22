@@ -230,8 +230,6 @@ int smsm_check_for_modem_crash(void)
 
 	if (readl(SMSM_STATE_ADDR(SMSM_MODEM_STATE)) & SMSM_RESET) {
 		dump_stack();
-		show_state_filter(TASK_UNINTERRUPTIBLE);
-		print_workqueue();
 		msm_pm_flush_console();
 		handle_modem_crash();
 		return -1;
@@ -1311,8 +1309,6 @@ static int smsm_init(void)
 
 		if (smsm_info.state) {
 			writel(0, SMSM_STATE_ADDR(SMSM_APPS_STATE));
-			pr_info("phy addr of smsm_info.state=0x%X\n",
-				MSM_SHARED_RAM_PHYS + ((uint32_t)smsm_info.state - (uint32_t)MSM_SHARED_RAM_BASE));
 			if ((shared->version[VERSION_MODEM] >> 16) >= 0xB)
 				writel(0, SMSM_STATE_ADDR(SMSM_APPS_DEM_I));
 		}
