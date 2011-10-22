@@ -37,6 +37,13 @@ config 720P_CAMERA
         help
           720P video support
 
+config CAMERA_ZSL
+	bool "Qualcomm MSM ZSL support"
+	depends on MSM_CAMERA && ARCH_MSM8X60
+	default n
+	---help---
+	  Enable support for ZSL
+
 config MSM_CAMERA_DEBUG
 	bool "Qualcomm MSM camera debugging with printk"
 	depends on MSM_CAMERA
@@ -167,7 +174,7 @@ config MT9V113
 config SP3D
 	bool "Sensor SP3D (Sharp 3D module)"
 	depends on MSM_CAMERA && ARCH_MSM8X60
-	default y
+	default n
 	---help---
 	SHARP 3D Module
 

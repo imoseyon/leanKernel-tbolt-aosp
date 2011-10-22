@@ -58,7 +58,8 @@
 #define CFG_GET_SP3D_R_FRAME	47
 #define CFG_SET_FLASHLIGHT		48
 #define CFG_SEND_WB_INFO        49
-#define CFG_MAX        			50
+#define CFG_SET_FLASHLIGHT_EXP_DIV 50
+#define CFG_MAX        			51
 
 
 
@@ -68,14 +69,16 @@
 #define SENSOR_PREVIEW_MODE		0
 #define SENSOR_SNAPSHOT_MODE		1
 #define SENSOR_RAW_SNAPSHOT_MODE	2
-#define SENSOR_VIDEO_120FPS_MODE	3
-#define SENSOR_GET_EXP 3
+#define SENSOR_VIDEO_MODE	3
+#define SENSOR_VIDEO_120FPS_MODE	4
+#define SENSOR_GET_EXP 5
 
 
 #define SENSOR_QTR_SIZE			0
 #define SENSOR_FULL_SIZE		1
 #define SENSOR_QVGA_SIZE		2
-#define SENSOR_INVALID_SIZE		3
+#define SENSOR_VIDEO_SIZE		3
+#define SENSOR_INVALID_SIZE		4
 
 #define CAMERA_EFFECT_OFF		0
 #define CAMERA_EFFECT_MONO		1
@@ -243,6 +246,14 @@ struct otp_cfg{
 	uint16_t sp3d_otp_version;
 };
 
+struct flash_cfg{
+	uint8_t flash_enable;
+	uint16_t exp_pre;
+	uint16_t exp_off;
+	uint16_t luma_pre;
+	uint16_t luma_off;
+};
+
 struct sensor_cfg_data {
 	int cfgtype;
 	int mode;
@@ -259,6 +270,7 @@ struct sensor_cfg_data {
 		uint16_t pictp_pl;
 		uint32_t pict_max_exp_lc;
 		uint16_t p_fps;
+		uint16_t flash_exp_div;
 		struct sensor_pict_fps gfps;
 		struct exp_gain_cfg exp_gain;
 		struct focus_cfg focus;
@@ -267,6 +279,7 @@ struct sensor_cfg_data {
 		struct fuse_id fuse;
 		struct lsc_cfg lsctable;/*Vincent for LSC calibration*/
 		struct otp_cfg sp3d_otp_cfg;
+		struct flash_cfg flash_data;
 //For 2nd CAM
 		enum antibanding_mode antibanding_value;
 		enum brightness_t brightness_value;

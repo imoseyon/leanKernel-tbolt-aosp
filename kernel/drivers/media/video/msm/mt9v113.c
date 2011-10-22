@@ -846,7 +846,7 @@ static int mt9v113_set_sensor_mode(int mode)
 
 #ifdef CONFIG_MSM_CAMERA_8X60
 			/* Apply sensor mirror/flip */
-			pr_info("mt9v113_sensor_open_init() , Apply sensor mirror/flip\n");
+			pr_info("mt9v113_set_sensor_mode() , Apply sensor mirror/flip\n");
 			mt9v113_set_front_camera_mode(CAMERA_MIRROR);
 #endif
 		}
@@ -1550,7 +1550,6 @@ static int mt9v113_vreg_enable(struct platform_device *pdev)
 	rc = sdata->camera_power_on();
 	return rc;
 }
-/*
 static int mt9v113_vreg_disable(struct platform_device *pdev)
 {
 	struct msm_camera_sensor_info *sdata = pdev->dev.platform_data;
@@ -1563,7 +1562,6 @@ static int mt9v113_vreg_disable(struct platform_device *pdev)
 	rc = sdata->camera_power_off();
 	return rc;
 }
-*/
 #endif
 
 static int mt9v113_sensor_init(void)
@@ -1595,9 +1593,21 @@ init_probe_fail:
 
 }
 
+
+
+static int suspend_fail_retry_count_2;
+#define SUSPEND_FAIL_RETRY_MAX_2 3
 int mt9v113_sensor_open_init(struct msm_camera_sensor_info *data)
 {
 	int rc = 0;
+#ifdef CONFIG_MSM_CAMERA_8X60
+	uint16_t check_value = 0;
+#endif
+
+	if (data == NULL) {
+		pr_err("[CAM]%s sensor data is NULL\n", __func__);
+		return -EINVAL;
+	}
 
 	mt9v113_ctrl = kzalloc(sizeof(struct mt9v113_ctrl_t), GFP_KERNEL);
 	if (!mt9v113_ctrl) {
@@ -1606,12 +1616,17 @@ int mt9v113_sensor_open_init(struct msm_camera_sensor_info *data)
 		goto init_done;
 	}
 
-	if (data == NULL) {
-		pr_err("[CAM]%s sensor data is NULL\n", __func__);
-		return -EINVAL;
-	}
 	mt9v113_ctrl->sensordata = data;
 	data->pdata->camera_gpio_on();
+
+
+#ifdef CONFIG_MSM_CAMERA_8X60
+	rc = mt9v113_vreg_enable(mt9v113_pdev);
+	if (rc < 0)
+		pr_err("[CAM]mt9v113_sensor_open_init fail sensor power on error\n");
+#endif
+
+
 	/*switch PCLK and MCLK to 2nd cam*/
 	pr_info("[CAM]mt9v113: mt9v113_sensor_open_init: switch clk\n");
 	if (data->camera_clk_switch != NULL)
@@ -1619,16 +1634,44 @@ int mt9v113_sensor_open_init(struct msm_camera_sensor_info *data)
 
 	msleep(1);
 
+
+	suspend_fail_retry_count_2 = SUSPEND_FAIL_RETRY_MAX_2;
+#ifdef CONFIG_MSM_CAMERA_8X60
+	if (!data->power_down_disable) {
+
+probe_suspend_fail_retry_2:
+		pr_info("[CAM] mt9v113_sensor_open_init  suspend_fail_retry_count_2=%d\n", suspend_fail_retry_count_2);
+
+		/*Config reset */
+		if (mt9v113_reset(data) < 0)
+			goto init_fail;
+	}
+#endif
+
 	/* Configure CAM GPIO ON (CAM_MCLK)*/
 	pr_info("[CAM]%s msm_camio_probe_on()\n", __func__);
 	msm_camio_probe_on(mt9v113_pdev);
 
 	/* Input MCLK = 24MHz */
+	pr_info("[CAM]mt9v113: MCLK enable clk\n");
 	msm_camio_clk_rate_set(24000000);
 	msleep(3);
 
 #ifndef CONFIG_MSM_CAMERA_8X60
 	msm_camio_camif_pad_reg_reset();
+#else
+
+	if (!data->power_down_disable) {
+		/* follow optical team Power Flow */
+		rc = gpio_request(data->sensor_reset, "mt9v113");
+		if (!rc) {
+			rc = gpio_direction_output(data->sensor_reset, 1);
+			msleep(1);
+		} else
+			pr_err("[CAM]GPIO(%d) request faile", data->sensor_reset);
+		gpio_free(data->sensor_reset);
+	}
+
 #endif
 
 	/*read ID*/
@@ -1639,7 +1682,48 @@ int mt9v113_sensor_open_init(struct msm_camera_sensor_info *data)
 	}
 
 #ifdef CONFIG_MSM_CAMERA_8X60
+	if (!data->power_down_disable) {
+		/*set initial register*/
+		rc = mt9v113_reg_init();
+		if (rc < 0) {
+			pr_err("[CAM]%s: mt9v113_reg_init fail\n", __func__);
+			goto init_fail;
+		}
 
+		rc = suspend(); /* set standby mode */
+		if (rc < 0) {
+			pr_err("[CAM]%s: mt9v113 init_suspend fail\n", __func__);
+
+			if (suspend_fail_retry_count_2 > 0) {
+				suspend_fail_retry_count_2--;
+				pr_info("[CAM]%s: mt9v113 init_suspend fail start retry mechanism !!!\n", __func__);
+				goto probe_suspend_fail_retry_2;
+			}
+
+			goto init_fail;
+		}
+
+		/* Do streaming Off */
+		/* write 0x0016[5] to 0  */
+		rc = mt9v113_i2c_read_w(mt9v113_client->addr, 0x0016, &check_value);
+		if (rc < 0)
+		  return rc;
+
+		pr_info("[CAM]%s: mt9v113: 0x0016 reg value = 0x%x\n",
+			__func__, check_value);
+
+		check_value = (check_value&0xFFDF);
+
+		pr_info("[CAM]%s: mt9v113: Set to 0x0016 reg value = 0x%x\n",
+			__func__, check_value);
+
+		rc = mt9v113_i2c_write(mt9v113_client->addr, 0x0016,
+			check_value, WORD_LEN);
+		if (rc < 0) {
+			pr_err("[CAM]%s: Enter Standby mode fail\n", __func__);
+			return rc;
+		}
+	}
 #else
 	/* standby mode to Active mode */
 	rc = resume();
@@ -1718,15 +1802,15 @@ int mt9v113_sensor_release(void)
 	uint16_t check_value = 0;
 	struct msm_camera_sensor_info *sdata = mt9v113_pdev->dev.platform_data;
 
-    /* enter SW standby mode */
-    pr_info("[CAM]%s: enter SW standby mode\n", __func__);
+	/* enter SW standby mode */
+	pr_info("[CAM]%s: enter SW standby mode\n", __func__);
 	suspend();
 	
 	/* Do streaming Off */
 	/* write 0x0016[5] to 0  */
 	rc = mt9v113_i2c_read_w(mt9v113_client->addr, 0x0016, &check_value);
 	if (rc < 0)
-	  return rc;
+	  goto sensor_release;
 
 	pr_info("[CAM]%s: mt9v113: 0x0016 reg value = 0x%x\n",
 		__func__, check_value);
@@ -1740,26 +1824,55 @@ int mt9v113_sensor_release(void)
 		check_value, WORD_LEN);
 	if (rc < 0) {
 		pr_err("[CAM]%s: Enter Standby mode fail\n", __func__);
-		return rc;
+		goto sensor_release;
 	}
 
-	/*0709: optical ask : CLK switch to Main Cam after 2nd Cam release*/
-	if (sdata->camera_clk_switch != NULL && sdata->cam_select_pin) {
-	pr_info("[CAM]%s: doing clk switch to Main CAM)\n", __func__);
-	rc = gpio_request(sdata->cam_select_pin, "mt9v113");
-	if (rc < 0)
-		pr_err("[CAM]GPIO (%d) request fail\n", sdata->cam_select_pin);
-	else
-		gpio_direction_output(sdata->cam_select_pin, 0);
-	gpio_free(sdata->cam_select_pin);
-	}
+	mdelay(2);
 
-	msleep(1);
+#ifdef CONFIG_MSM_CAMERA_8X60
+	if (!sdata->power_down_disable) {
+		rc = gpio_request(sdata->sensor_reset, "mt9v113");
+		if (!rc) {
+			rc = gpio_direction_output(sdata->sensor_reset, 0);
+			mdelay(2);
+		} else
+			pr_err("[CAM]GPIO(%d) request faile", sdata->sensor_reset);
+		gpio_free(sdata->sensor_reset);
+	}
+#endif
 
 	/* Configure CAM GPIO OFF (CAM_MCLK)*/
 	pr_info("[CAM]%s msm_camio_probe_off()\n", __func__);
 	msm_camio_probe_off(mt9v113_pdev);
 	sdata->pdata->camera_gpio_off();
+
+	mdelay(2);
+
+	/*0709: optical ask : CLK switch to Main Cam after 2nd Cam release*/
+	if (sdata->camera_clk_switch != NULL && sdata->cam_select_pin) {
+		pr_info("[CAM]%s: doing clk switch to Main CAM)\n", __func__);
+		rc = gpio_request(sdata->cam_select_pin, "mt9v113");
+		if (rc < 0)
+			pr_err("[CAM]GPIO (%d) request fail\n", sdata->cam_select_pin);
+		else
+			gpio_direction_output(sdata->cam_select_pin, 0);
+		gpio_free(sdata->cam_select_pin);
+	}
+
+	mdelay(2);
+
+
+#ifdef CONFIG_MSM_CAMERA_8X60
+	if (!sdata->power_down_disable) {
+		mt9v113_vreg_disable(mt9v113_pdev);
+	}
+#endif
+
+
+sensor_release:
+	kfree(mt9v113_ctrl);
+	mt9v113_ctrl = NULL;
+
 	return rc;
 }
 
@@ -1895,6 +2008,11 @@ static struct i2c_driver mt9v113_i2c_driver = {
 		   },
 };
 
+
+
+static int suspend_fail_retry_count;
+#define SUSPEND_FAIL_RETRY_MAX 3
+
 static int mt9v113_sensor_probe(struct msm_camera_sensor_info *info,
 				struct msm_sensor_ctrl *s)
 {
@@ -1915,41 +2033,68 @@ static int mt9v113_sensor_probe(struct msm_camera_sensor_info *info,
 	if (info->camera_clk_switch != NULL)
 		info->camera_clk_switch();
 
+	suspend_fail_retry_count = SUSPEND_FAIL_RETRY_MAX;
+probe_suspend_fail_retry:
+	pr_info("[CAM] mt9v113_sensor_probe  suspend_fail_retry_count=%d\n", suspend_fail_retry_count);
+
 	/*Config reset */
 	if (mt9v113_reset(info) < 0)
 		goto probe_fail;
 
+
+	/* Configure CAM GPIO ON (CAM_MCLK)*/
+	pr_info("[CAM]%s msm_camio_probe_on()\n", __func__);
+	msm_camio_probe_on(mt9v113_pdev);
+
+
 	/*MCLK enable*/
 	pr_info("[CAM]mt9v113: MCLK enable clk\n");
 	msm_camio_clk_rate_set(24000000);
-	msleep(1);
+	mdelay(2);
+
+
+#ifdef CONFIG_MSM_CAMERA_8X60
+	rc = gpio_request(info->sensor_pwd, "mt9v113");
+	if (!rc) {
+		rc = gpio_direction_output(info->sensor_pwd, 0);
+		mdelay(2);
+	} else
+		pr_err("[CAM]GPIO(%d) request faile", info->sensor_pwd);
+	gpio_free(info->sensor_pwd);
+#endif
+
 
     /* follow optical team Power Flow */
 	rc = gpio_request(info->sensor_reset, "mt9v113");
 	if (!rc) {
 		rc = gpio_direction_output(info->sensor_reset, 1);
-		msleep(1);
+		mdelay(2);
 	} else
 		pr_err("[CAM]GPIO(%d) request faile", info->sensor_reset);
 	gpio_free(info->sensor_reset);
 
-    msleep(2);
-	/* rc = mt9v113_sensor_init(info); */
+    mdelay(2);
 	rc = mt9v113_sensor_init();
 	if (rc < 0)
-		goto probe_fail;
+		goto probe_fail_close_pwr;
 
 	/*set initial register*/
 	rc = mt9v113_reg_init();
 	if (rc < 0) {
 		pr_err("[CAM]%s: mt9v113_reg_init fail\n", __func__);
-		goto probe_fail;
+		goto probe_fail_close_pwr;
 	}
 
 	rc = suspend(); /* set standby mode */
 	if (rc < 0) {
 		pr_err("[CAM]%s: mt9v113 init_suspend fail\n", __func__);
-		goto probe_fail;
+		if (suspend_fail_retry_count > 0) {
+			suspend_fail_retry_count--;
+			pr_info("[CAM]%s: mt9v113 init_suspend fail start retry mechanism !!!\n", __func__);
+			goto probe_suspend_fail_retry;
+		}
+
+		goto probe_fail_close_pwr;
 	}
 
 
@@ -1986,9 +2131,64 @@ static int mt9v113_sensor_probe(struct msm_camera_sensor_info *info,
 
 	mt9v113_sysfs_init();
 
+
+#ifdef CONFIG_MSM_CAMERA_8X60
+	if (!info->power_down_disable) {
+		rc = gpio_request(info->sensor_reset, "mt9v113");
+		if (!rc) {
+			rc = gpio_direction_output(info->sensor_reset, 0);
+			mdelay(1);
+		} else
+			pr_err("[CAM]GPIO(%d) request faile", info->sensor_reset);
+		gpio_free(info->sensor_reset);
+	}
+#endif
+
+	/* Configure CAM GPIO OFF (CAM_MCLK)*/
+	pr_info("[CAM]%s msm_camio_probe_off()\n", __func__);
+	msm_camio_probe_off(mt9v113_pdev);
+	info->pdata->camera_gpio_off();
+
+	mdelay(1);
+
+	/*0709: optical ask : CLK switch to Main Cam after 2nd Cam release*/
+	if (info->camera_clk_switch != NULL && info->cam_select_pin) {
+	pr_info("[CAM]%s: doing clk switch to Main CAM)\n", __func__);
+	rc = gpio_request(info->cam_select_pin, "mt9v113");
+	if (rc < 0)
+		pr_err("[CAM]GPIO (%d) request fail\n", info->cam_select_pin);
+	else
+		gpio_direction_output(info->cam_select_pin, 0);
+	gpio_free(info->cam_select_pin);
+	}
+
+	mdelay(1);
+
+#ifdef CONFIG_MSM_CAMERA_8X60
+	if (!info->power_down_disable) {
+		mt9v113_vreg_disable(mt9v113_pdev);
+	}
+#endif
+
+
 probe_done:
 	pr_info("[CAM]%s %s:%d\n", __FILE__, __func__, __LINE__);
 	return rc;
+probe_fail_close_pwr:
+#ifdef CONFIG_MSM_CAMERA_8X60
+	rc = gpio_request(info->sensor_reset, "mt9v113");
+	if (!rc) {
+		rc = gpio_direction_output(info->sensor_reset, 0);
+		mdelay(1);
+	} else
+		pr_err("[CAM]GPIO(%d) request faile", info->sensor_reset);
+	gpio_free(info->sensor_reset);
+#endif
+	msm_camio_probe_off(mt9v113_pdev);
+	info->pdata->camera_gpio_off();
+#ifdef CONFIG_MSM_CAMERA_8X60
+	mt9v113_vreg_disable(mt9v113_pdev);
+#endif
 probe_fail:
 	pr_err("[CAM]mt9v113 probe faile\n");
 	return rc;
@@ -2015,7 +2215,11 @@ static int __mt9v113_probe(struct platform_device *pdev)
 static struct platform_driver msm_camera_driver = {
 	.probe = __mt9v113_probe,
 	.driver = {
+#ifdef CONFIG_MSM_CAMERA_8X60
+		   .name = "msm_camera_webcam",
+#else
 		   .name = "msm_camera_mt9v113",
+#endif
 		   .owner = THIS_MODULE,
 		   },
 };

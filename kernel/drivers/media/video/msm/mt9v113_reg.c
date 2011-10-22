@@ -160,15 +160,9 @@ static struct mt9v113_i2c_reg_conf contract_setup_tb0[] = {
 	{0x098C, 0xAB45, WORD_LEN, 0},
 	{0x0990, 0x00D9, WORD_LEN, 0},
 	{0x098C, 0xAB46, WORD_LEN, 0},
-#ifdef CONFIG_MSM_CAMERA_8X60
-	{0x0990, 0x0000, WORD_LEN, 0},
-	{0x098C, 0xAB47, WORD_LEN, 0},
-	{0x0990, 0x0000, WORD_LEN, 0},
-#else
 	{0x0990, 0x00E1, WORD_LEN, 0},/*{0x0990, 0x0000, WORD_LEN, 0},*/
 	{0x098C, 0xAB47, WORD_LEN, 0},
 	{0x0990, 0x00E8, WORD_LEN, 0},/*{0x0990, 0x0000, WORD_LEN, 0},*/
-#endif
 	{0x098C, 0xAB48, WORD_LEN, 0},
 	{0x0990, 0x00EE, WORD_LEN, 0},
 	{0x098C, 0xAB49, WORD_LEN, 0},
@@ -208,15 +202,9 @@ static struct mt9v113_i2c_reg_conf contract_setup_tb1[] = {
 	{0x098C, 0xAB45, WORD_LEN, 0},
 	{0x0990, 0x00D9, WORD_LEN, 0},
 	{0x098C, 0xAB46, WORD_LEN, 0},
-#ifdef CONFIG_MSM_CAMERA_8X60
-	{0x0990, 0x0000, WORD_LEN, 0},
-	{0x098C, 0xAB47, WORD_LEN, 0},
-	{0x0990, 0x0000, WORD_LEN, 0},
-#else
 	{0x0990, 0x00E1, WORD_LEN, 0},/*{0x0990, 0x0000, WORD_LEN, 0},*/
 	{0x098C, 0xAB47, WORD_LEN, 0},
 	{0x0990, 0x00E8, WORD_LEN, 0},/*{0x0990, 0x0000, WORD_LEN, 0},*/
-#endif
 	{0x098C, 0xAB48, WORD_LEN, 0},
 	{0x0990, 0x00EE, WORD_LEN, 0},
 	{0x098C, 0xAB49, WORD_LEN, 0},
@@ -304,11 +292,7 @@ static struct mt9v113_i2c_reg_conf contract_setup_tb3[] = {
 	{0x098C, 0xAB48, WORD_LEN, 0},
 	{0x0990, 0x00DB, WORD_LEN, 0},
 	{0x098C, 0xAB49, WORD_LEN, 0},
-#ifdef CONFIG_MSM_CAMERA_8X60
-	{0x0990, 0x0000, WORD_LEN, 0},
-#else
 	{0x0990, 0x00E3, WORD_LEN, 0},/*{0x0990, 0x0000, WORD_LEN, 0},*/
-#endif
 	{0x098C, 0xAB4A, WORD_LEN, 0},
 	{0x0990, 0x00EA, WORD_LEN, 0},
 	{0x098C, 0xAB4B, WORD_LEN, 0},
@@ -350,11 +334,7 @@ static struct mt9v113_i2c_reg_conf contract_setup_tb4[] = {
 	{0x098C, 0xAB48, WORD_LEN, 0},
 	{0x0990, 0x00E2, WORD_LEN, 0},
 	{0x098C, 0xAB49, WORD_LEN, 0},
-#ifdef CONFIG_MSM_CAMERA_8X60
-	{0x0990, 0x0000, WORD_LEN, 0},
-#else
 	{0x0990, 0x00E9, WORD_LEN, 0},/*{0x0990, 0x0000, WORD_LEN, 0},*/
-#endif
 	{0x098C, 0xAB4A, WORD_LEN, 0},
 	{0x0990, 0x00EE, WORD_LEN, 0},
 	{0x098C, 0xAB4B, WORD_LEN, 0},

@@ -43,6 +43,11 @@
 #define S5K6AAFX_REG_R_ADDL 0x002E
 #define S5K6AAFX_REG_WR 0x0F12
 
+#define S5K6AAFX_REG_3TC_PCFG_usFrTimeType 0x02C2
+#define S5K6AAFX_REG_3TC_PCFG_usMaxFrTimeMsecMult10 0x02C6
+#define S5K6AAFX_REG_3TC_PCFG_usMinFrTimeMsecMult10 0x02C8
+#define S5K6AAFX_REG_TC_GP_PrevConfigChanged 0x021E
+
 #define S5K6AAFX_QTR_SIZE_WIDTH 0x0280
 #define S5K6AAFX_QTR_SIZE_HEIGHT 0x01E0
 #define S5K6AAFX_720P_SIZE_WIDTH 0x0500
@@ -68,6 +73,8 @@ struct s5k6aafx_reg {
         uint16_t analog_setting_init_size;
 	const struct s5k6aafx_i2c_reg_conf *register_init;
 	uint16_t register_init_size;
+	const struct s5k6aafx_i2c_reg_conf *mipi_clk_init;
+	uint16_t mipi_clk_init_size;
 	const struct s5k6aafx_i2c_reg_conf *clk_init;
 	uint16_t clk_init_size;
 	const struct s5k6aafx_i2c_reg_conf *prev_snap_conf_init;

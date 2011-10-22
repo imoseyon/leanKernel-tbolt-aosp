@@ -7,7 +7,11 @@ obj-$(CONFIG_MT9P012) += mt9p012_fox.o mt9p012_reg.o
 obj-$(CONFIG_MSM_CAMERA_LEGACY) += msm_camera.o
 #msm_v4l2.o
 obj-$(CONFIG_MSM_CAMERA_7X30) += msm_camera-7x30.o msm_vfe31.o msm_io_vfe31.o msm_axi_qos.o msm_vpe1.o
+ifdef CONFIG_CAMERA_ZSL
+obj-$(CONFIG_MSM_CAMERA_8X60) += msm_camera-8x60.o msm_io_8x60.o msm_vfe_8x60_ZSL.o msm_axi_qos.o msm_vpe1_8x60.o
+else
 obj-$(CONFIG_MSM_CAMERA_8X60) += msm_camera-8x60.o msm_io_8x60.o msm_vfe_8x60.o msm_axi_qos.o msm_vpe1_8x60.o
+endif
 obj-$(CONFIG_S5K3E2FX) += s5k3e2fx.o
 ifdef CONFIG_ARCH_MSM8X60
 obj-$(CONFIG_S5K4E1GX) += s5k4e1gx_8x60.o s5k4e1gx_reg_8x60.o
@@ -24,10 +28,12 @@ obj-$(CONFIG_MACH_EXPRESS) += s5k6aafx.o s5k6aafx_reg_flyer.o
 obj-$(CONFIG_MACH_EXPRESS_KT) += s5k6aafx.o s5k6aafx_reg_flyer.o
 obj-$(CONFIG_MACH_SUPERSONIC) += s5k6aafx_suc.o s5k6aafx_reg_suc.o
 obj-$(CONFIG_MACH_SHOOTER) += s5k6aafx.o s5k6aafx_reg_shooter.o
-obj-$(CONFIG_MACH_VERDI) += s5k6aafx.o s5k6aafx_reg_shooter.o
-obj-$(CONFIG_MACH_VERDI_LTE) += s5k6aafx.o s5k6aafx_reg_shooter.o
-obj-$(CONFIG_MACH_RIDER) += s5k6aafx.o s5k6aafx_reg_shooter.o
-obj-$(CONFIG_MACH_KINGDOM) += s5k6aafx.o s5k6aafx_reg_shooter.o
+obj-$(CONFIG_MACH_SHOOTER_U) += s5k6aafx.o s5k6aafx_reg_shooter.o
+obj-$(CONFIG_MACH_VERDI) += s5k6aafx.o s5k6aafx_reg_verdi.o
+obj-$(CONFIG_MACH_VERDI_LTE) += s5k6aafx.o s5k6aafx_reg_verdi.o
+obj-$(CONFIG_MACH_RIDER) += s5k6aafx.o s5k6aafx_reg_rider.o
+obj-$(CONFIG_MACH_KINGDOM) += s5k6aafx.o s5k6aafx_reg_kingdom.o
+obj-$(CONFIG_MACH_HOLIDAY) += s5k6aafx.o s5k6aafx_reg_holiday.o
 endif
 obj-$(CONFIG_ARCH_MSM_ARM11) += msm_vfe7x.o msm_io7x.o
 obj-$(CONFIG_ARCH_QSD8X50) += msm_vfe8x.o msm_vfe8x_proc.o msm_io8x.o
@@ -38,8 +44,16 @@ obj-$(CONFIG_SP3D) += sp3d.o sp3d_reg_3d.o sp3d_reg_2d.o sp3d_reg_com.o sp3d_reg
 ifdef CONFIG_MACH_SUPERSONIC
 obj-$(CONFIG_S5K3H1GX) += s5k3h1gx_suc.o s5k3h1gx_reg_suc.o
 else
+ifdef CONFIG_MACH_PYRAMID
+obj-$(CONFIG_S5K3H1GX) += s5k3h1gx.o s5k3h1gx_reg_pyd.o
+else
 obj-$(CONFIG_S5K3H1GX) += s5k3h1gx.o s5k3h1gx_reg.o
 endif
+endif
+ifdef CONFIG_MACH_DOUBLESHOT
+obj-$(CONFIG_S5K3H2YX) += s5k3h2yx.o s5k3h2yx_reg_dot.o
+else
 obj-$(CONFIG_S5K3H2YX) += s5k3h2yx.o s5k3h2yx_reg.o
+endif
 obj-$(CONFIG_MT9V113) += mt9v113.o mt9v113_reg.o
 obj-$(CONFIG_MSM_GEMINI) += msm_gemini_dev.o msm_gemini_sync.o msm_gemini_core.o msm_gemini_hw.o msm_gemini_platform.o
