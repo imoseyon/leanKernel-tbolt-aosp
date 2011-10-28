@@ -25,6 +25,7 @@ cp lib/lzo/lzo_compress.ko ../zip/system/lib/modules
 cp fs/cifs/cifs.ko ../zip/system/lib/modules
 cp arch/arm/boot/zImage ../mkboot/
 cp drivers/net/wireless/bcm4329/bcm4329.ko ../mkboot/
+cp .config arch/arm/configs/lean_mecha_aosp_defconfig
 cd ../mkboot
 echo "making boot image"
 ./img.sh
